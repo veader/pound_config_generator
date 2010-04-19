@@ -1,0 +1,16 @@
+A simple hack based off Chris Wanstrath's generate_nginx_config gem.
+
+Use it:
+  $ generate_pound_config pound_config.yml /etc/pound/pound.conf
+
+See an example config file:
+  $ generate_pound_config --example
+
+You can set two environment variables:
+  - POUND_CONFIG_YAML to specify the YAML config file
+  - POUND_CONFIG_FILE to specify the pound config file
+
+By default, generate_pound_config won't overwrite your OUT file.  To override this behavior, pass in --overwrite or -o or -y or --force or -f.
+
+>> Shawn Veader
+=> shawn[at]veader[dot]org

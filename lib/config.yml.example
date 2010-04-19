@@ -1,0 +1,39 @@
+# all your HTTPS sites (port 443)
+https_sites:
+  # where to find the certificate PEM file
+  cert_path: /etc/pound/certs/cert.pem
+  sites:
+    site_1:
+      domain: test1.veader.org
+      backends:
+        - 192.168.0.10
+        - 192.168.0.11
+      start_port: 8000
+      num_ports: 5
+      # setup a rule under HTTP to redirect to HTTPS
+      redirect: true
+
+    site_static:
+      domain: test1.veader.org
+      backends: 192.168.0.14
+      start_port: 8040
+      num_ports: 1
+      static: true
+    
+# all your HTTP sites (port 80)
+http_sites:
+  sites:
+    site_2:
+      domain: test2.veader.org
+      backends: 192.168.0.12
+      start_port: 8010
+      num_ports: 4
+      # setup a rule under HTTPS to redirect to HTTP
+      redirect: true
+    
+    site_3:
+      domain: test3.veader.org
+      backends: 192.168.0.13
+      start_port: 8020
+      num_ports: 3
+      redirect: false

@@ -1,0 +1,133 @@
+<%
+  all_sites = []
+  Array(config['https_sites']['sites']).each do |n,s|
+    all_sites << s['domain']
+  end if config['https_sites']
+  Array(config['http_sites']['sites'] ).each do |n,s|
+    all_sites << s['domain']
+  end if config['http_sites']
+  all_sites.uniq! # kill duplicates
+  all_sites.sort! # sort by domain
+
+  cert_path = \
+      config['https_sites']['cert_path'] || '/etc/pound/certs/cert.pem'
+
+  https_sites = \
+    config['https_sites'] ? Array(config['https_sites']['sites']) : nil
+  http_sites  = \
+    config['http_sites']  ? Array(config['http_sites']['sites'])  : nil
+%>
+User      "www-data"
+Group     "www-data"
+#WebDAV   0
+## Logging: (goes to syslog by default)
+LogLevel  5
+## how often to check backends (seconds)
+Alive     30
+## how long pound will wait for client connection (seconds)
+Client		60
+## timout to backend servers (seconds)
+TimeOut 	100
+
+<% if https_sites %>
+# ----------------------------------------------------------------
+ListenHTTPS
+  Address 0.0.0.0
+  Port    443
+  Cert    "<%= cert_path %>"
+  xHTTP   1
+
+  # pass along https hint
+  AddHeader  "X-Forwarded-Proto: https"
+  HeadRemove "X-Forwarded-Proto"
+<%  https_sites.sort_by { |n,s| s['domain']}.each do |name, site| %>
+
+  # <%= name.upcase %>
+
+  Service
+    HeadRequire ".*<%= site['domain'] || 'test.domain.com' %>.*"
+<%    all_sites.reject { |d| site['domain'] == d }.each do |domain| %>
+    HeadDeny    ".*<%= domain %>.*"
+<%    end # all_sites.each %>
+
+<%    if site['static'] %>
+    URL "<%= site['filter'] || '.*.(css|js|jpg|gif|png)' %>"
+<%    end %>
+
+<%    1.upto(site['num_ports'] || 5) do |i| %>
+<%      Array(site['backends']).each do |backend| %>
+    BackEnd
+      Address <%= backend %>
+
+      Port    <%= (site['start_port'] || 8000) + (i-1) %>
+
+    End
+<%      end # backends.each %>
+<%    end # 0 - num_ports %>
+  End
+<%  end # https_sites[:sites].each %>
+
+<%  if http_sites %>
+<%    http_sites.sort_by { |n,s| s['domain'] }.each do |name, site| %>
+<%      next unless site['redirect'] %>
+  # <%= name.upcase %> (redirect)
+  Service
+    HeadRequire ".*<%= site['domain'] || 'test.domain.com' %>.*"
+<%    all_sites.reject { |d| site['domain'] == d }.each do |domain| %>
+    HeadDeny    ".*<%= domain %>.*"
+<%    end # all_sites.each %>
+    
+    Redirect "http://<%= site['domain'] || 'test.domain.com' %>"
+  End
+  
+<%    end # http_sites[:sites].each %>
+<%  end # if HTTP %>
+End
+<% end # if HTTPS %>
+
+<% if http_sites %>
+# ----------------------------------------------------------------
+ListenHTTP
+  Address 0.0.0.0
+  Port    80
+  xHTTP   1
+<%  http_sites.sort_by { |n,s| s['domain'] }.each do |name, site| %>
+
+  # <%= name.upcase %>
+
+  Service
+    HeadRequire ".*<%= site['domain'] || 'test.domain.com' %>.*"
+<%    all_sites.reject { |d| site['domain'] == d }.each do |domain| %>
+    HeadDeny    ".*<%= domain %>.*"
+<%    end # all_sites.each %>
+
+<%    1.upto(site['num_ports'] || 5) do |i| %>
+<%      Array(site['backends']).each do |backend| %>
+    BackEnd
+      Address <%= backend %>
+
+      Port    <%= (site['start_port'] || 8000) + (i-1) %>
+
+    End
+<%      end # backends.each %>
+<%    end # 0 - num_ports %>
+  End
+<%  end # http_site[:sites].each %>
+
+<%  if https_sites %>
+<%    https_sites.sort_by { |n,s| s['domain'] }.each do |name, site| %>
+<%      next unless site['redirect'] %>
+  # <%= name.upcase %> (redirect)
+  Service
+    HeadRequire ".*<%= site['domain'] || 'test.domain.com' %>.*"
+<%    all_sites.reject { |d| site['domain'] == d }.each do |domain| %>
+    HeadDeny    ".*<%= domain %>.*"
+<%    end # all_sites.each %>
+    
+    Redirect "https://<%= site['domain'] || 'test.domain.com' %>"
+  End
+  
+<%    end # https_sites[:sites].each %>
+<%  end # if HTTPS %>
+End
+<% end # if HTTP %>

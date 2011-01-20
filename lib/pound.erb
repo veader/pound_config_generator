@@ -40,14 +40,14 @@ ListenHTTPS
   # pass along https hint
   AddHeader  "X-Forwarded-Proto: https"
   HeadRemove "X-Forwarded-Proto"
-<%  https_sites.sort_by { |n,s| s['domain']}.each do |name, site| %>
-
+<%  https_sites.sort_by { |n,s| s['domain'] }.each do |name, site| %>
+<%    this_domain = site['domain'] || 'test.domain.com' %>
   # <%= name.upcase %>
 
   Service
-    HeadRequire ".*<%= site['domain'] || 'test.domain.com' %>.*"
-<%    all_sites.reject { |d| site['domain'] == d }.each do |domain| %>
-    HeadDeny    ".*<%= domain %>.*"
+    HeadRequire "Host: <%= this_domain.gsub(/\./, '\.') %>"
+<%    all_sites.reject { |d| this_domain == d }.each do |domain| %>
+    HeadDeny    "Host: <%= domain.gsub(/\./, '\.') %>"
 <%    end # all_sites.each %>
 
 <%    if site['static'] %>
@@ -70,14 +70,15 @@ ListenHTTPS
 <%  if http_sites %>
 <%    http_sites.sort_by { |n,s| s['domain'] }.each do |name, site| %>
 <%      next unless site['redirect'] %>
+<%      this_domain = site['domain'] || 'test.domain.com' %>
   # <%= name.upcase %> (redirect)
   Service
-    HeadRequire ".*<%= site['domain'] || 'test.domain.com' %>.*"
-<%    all_sites.reject { |d| site['domain'] == d }.each do |domain| %>
-    HeadDeny    ".*<%= domain %>.*"
+    HeadRequire "Host: <%= this_domain.gsub(/\./, '\.') %>"
+<%    all_sites.reject { |d| this_domain == d }.each do |domain| %>
+    HeadDeny    "Host: <%= domain.gsub(/\./, '\.') %>"
 <%    end # all_sites.each %>
     
-    Redirect "http://<%= site['domain'] || 'test.domain.com' %>"
+    Redirect "http://<%= this_domain %>"
   End
   
 <%    end # http_sites[:sites].each %>
@@ -92,13 +93,14 @@ ListenHTTP
   Port    80
   xHTTP   1
 <%  http_sites.sort_by { |n,s| s['domain'] }.each do |name, site| %>
+<%    this_domain = site['domain'] || 'test.domain.com' %>
 
   # <%= name.upcase %>
 
   Service
-    HeadRequire ".*<%= site['domain'] || 'test.domain.com' %>.*"
-<%    all_sites.reject { |d| site['domain'] == d }.each do |domain| %>
-    HeadDeny    ".*<%= domain %>.*"
+    HeadRequire "Host: <%= this_domain.gsub(/\./, '\.') %>"
+<%    all_sites.reject { |d| this_domain == d }.each do |domain| %>
+    HeadDeny    "Host: <%= domain.gsub(/\./, '\.') %>"
 <%    end # all_sites.each %>
 
 <%    1.upto(site['num_ports'] || 5) do |i| %>
@@ -117,14 +119,15 @@ ListenHTTP
 <%  if https_sites %>
 <%    https_sites.sort_by { |n,s| s['domain'] }.each do |name, site| %>
 <%      next unless site['redirect'] %>
+<%      this_domain = site['domain'] || 'test.domain.com' %>
   # <%= name.upcase %> (redirect)
   Service
-    HeadRequire ".*<%= site['domain'] || 'test.domain.com' %>.*"
-<%    all_sites.reject { |d| site['domain'] == d }.each do |domain| %>
-    HeadDeny    ".*<%= domain %>.*"
+    HeadRequire "Host: <%= this_domain.gsub(/\./, '\.') %>"
+<%    all_sites.reject { |d| this_domain == d }.each do |domain| %>
+    HeadDeny    "Host: <%= domain.gsub(/\./, '\.') %>"
 <%    end # all_sites.each %>
     
-    Redirect "https://<%= site['domain'] || 'test.domain.com' %>"
+    Redirect "https://<%= this_domain %>"
   End
   
 <%    end # https_sites[:sites].each %>
